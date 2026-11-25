@@ -1,0 +1,74 @@
+[
+  {
+    "id": "masjid-al-haram",
+    "name": "Masjid al-Haram",
+    "category": "landmark",
+    "address": "Al Haram, Makkah",
+    "latitude": 21.4225,
+    "longitude": 39.8262
+  },
+  {
+    "id": "abraj-al-bait",
+    "name": "Abraj Al Bait",
+    "category": "landmark",
+    "address": "King Abdul Aziz Endowment, Makkah",
+    "latitude": 21.4189,
+    "longitude": 39.8257
+  },
+  {
+    "id": "jabal-omar",
+    "name": "Jabal Omar",
+    "category": "district",
+    "address": "Ibrahim Al Khalil Street, Makkah",
+    "latitude": 21.4211,
+    "longitude": 39.8189
+  },
+  {
+    "id": "ajyad-hotel",
+    "name": "Ajyad Hotel",
+    "category": "hotel",
+    "address": "Ajyad Street, Makkah",
+    "latitude": 21.4153,
+    "longitude": 39.8294
+  },
+  {
+    "id": "mina-station",
+    "name": "Mina Station",
+    "category": "transit",
+    "address": "Mina, Makkah",
+    "latitude": 21.4134,
+    "longitude": 39.8844
+  },
+  {
+    "id": "souq-al-khalil",
+    "name": "Souq Al Khalil",
+    "category": "landmark",
+    "address": "Ibrahim Al Khalil Street, Makkah",
+    "latitude": 21.4181,
+    "longitude": 39.8234
+  },
+  {
+    "id": "ibrahim-al-khalil-street",
+    "name": "Ibrahim Al Khalil Street",
+    "category": "street",
+    "address": "Central Makkah",
+    "latitude": 21.4167,
+    "longitude": 39.8214
+  },
+  {
+    "id": "kudai",
+    "name": "Kudai",
+    "category": "district",
+    "address": "Kudai, Makkah",
+    "latitude": 21.3974,
+    "longitude": 39.8273
+  },
+  {
+    "id": "makkah-museum",
+    "name": "Makkah Museum",
+    "category": "landmark",
+    "address": "Umm Al-Joud, Makkah",
+    "latitude": 21.4386,
+    "longitude": 39.7903
+  }
+]

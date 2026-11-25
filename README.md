@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Makkah Walk
 
-## Getting Started
+A mobile-first walking map MVP for exploring sample locations in Makkah. Search locations, preview an explicitly labeled demonstration route, and switch between top-down and tilted map cameras.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No API keys are required. The default basemap uses OpenStreetMap raster tiles and needs an internet connection; follow the tile provider's usage policy and attribution requirements. Search and routing use local sample data. Neither sample places nor demonstration geometry are verified walking directions or evidence of pedestrian access.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Optional map configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_MAP_STYLE_URL`: MapLibre style JSON URL. Defaults to OpenStreetMap raster tiles.
+- `NEXT_PUBLIC_BUILDING_TILE_URL`: vector tile URL template for optional building extrusions.
+- `NEXT_PUBLIC_BUILDING_SOURCE_LAYER`: source layer name in the configured building tiles (defaults to `building`).
+- `NEXT_PUBLIC_GEOCODING_PROVIDER` and `NEXT_PUBLIC_ROUTING_PROVIDER`: currently accept `mock` only. Real provider implementations can be added behind the interfaces in `domain/interfaces` and selected through `infrastructure/providers/provider-registry.ts`.
 
-## Learn More
+The map can tilt without vector building data; 2D raster tiles do not provide building geometry. The supported Makkah polygon is approximate and illustrative.
 
-To learn more about Next.js, take a look at the following resources:
+## Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run test
+npm run test:e2e
+npm run typecheck
+npm run lint
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The code is organized by feature, with framework-independent domain contracts, application use cases, local infrastructure providers, and focused Zustand stores. MapLibre is loaded client-side and its instance remains outside global state.
