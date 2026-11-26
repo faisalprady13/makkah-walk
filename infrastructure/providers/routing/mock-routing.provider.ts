@@ -3,6 +3,7 @@ import type { Coordinates } from "@/domain/entities/coordinates";
 import type { RoutingProvider } from "@/domain/interfaces/routing-provider";
 import type { WalkingRoute } from "@/domain/entities/walking-route";
 import { validateMakkahLocation } from "@/domain/services/geographic-validation";
+import { RoutingProviderError } from "./routing-provider-error";
 
 function haversineDistance(a: Coordinates, b: Coordinates): number {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -27,7 +28,10 @@ export class MockRoutingProvider implements RoutingProvider {
     const validatedDestination = coordinatesSchema.safeParse(destination);
 
     if (!validatedOrigin.success || !validatedDestination.success) {
-      throw new Error("Route coordinates are invalid.");
+      throw new RoutingProviderError(
+        "invalid_coordinates",
+        "Route coordinates are invalid.",
+      );
     }
 
     const originError = validateMakkahLocation(origin);
@@ -38,10 +42,16 @@ export class MockRoutingProvider implements RoutingProvider {
 
     const directDistance = haversineDistance(origin, destination);
     if (directDistance < 5) {
-      throw new Error("Choose two different locations to see a demonstration route.");
+      throw new RoutingProviderError(
+        "no_route",
+        "Choose two different locations to see a route.",
+      );
     }
     if (directDistance > 15_000) {
-      throw new Error("A demonstration route is unavailable for locations this far apart.");
+      throw new RoutingProviderError(
+        "no_route",
+        "A route is unavailable for locations this far apart.",
+      );
     }
 
     const longitudeDelta = destination.longitude - origin.longitude;
@@ -66,7 +76,7 @@ export class MockRoutingProvider implements RoutingProvider {
         ],
       },
       distanceMeters: routeDistance,
-      durationMinutes: Math.max(1, Math.round(routeDistance / (4_000 / 60))),
+      durationSeconds: Math.max(1, Math.round(routeDistance / (4_000 / 3_600))),
       provider: "mock",
       isDemonstration: true,
     };

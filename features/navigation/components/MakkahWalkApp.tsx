@@ -1,26 +1,33 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { ArrowDownUp, LocateFixed, MapPin, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { LocationSearchField } from "@/features/location-search/components/LocationSearchField";
-import { getWalkingRoute } from "@/application/use-cases/get-walking-route";
+import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
+import { getWalkingRoute } from '@/application/use-cases/get-walking-route';
+import { geocodingProvider } from '@/infrastructure/providers/provider-registry';
+import { ApiRoutingProvider } from '@/infrastructure/providers/routing/api-routing.provider';
+import { getDeviceCoordinates } from '@/features/geolocation/services/get-device-coordinates';
+import { isInsideBoundary } from '@/domain/services/geographic-validation';
+import { useDirectionsStore } from '@/stores/directions.store';
+import { useLocationStore } from '@/stores/location.store';
+import { useMapStore } from '@/stores/map.store';
+import type { Location } from '@/domain/entities/location';
+import type { Hotel } from '@/domain/entities/hotel';
+import { HotelPicker } from '@/features/hotels/components/HotelPicker';
+import { MakkahWalkHeader } from '@/features/navigation/components/MakkahWalkHeader';
+import { MapWelcome } from '@/features/navigation/components/MapWelcome';
+import { RoutePlanner } from '@/features/navigation/components/RoutePlanner';
 import {
-  geocodingProvider,
-  routingProvider,
-} from "@/infrastructure/providers/provider-registry";
-import { getDeviceCoordinates } from "@/features/geolocation/services/get-device-coordinates";
-import { isInsideBoundary } from "@/domain/services/geographic-validation";
-import { useDirectionsStore } from "@/stores/directions.store";
-import { useLocationStore } from "@/stores/location.store";
-import { useMapStore } from "@/stores/map.store";
-import type { Location } from "@/domain/entities/location";
-import { RouteSummary } from "@/features/directions/components/RouteSummary";
+  HOTEL_ROUTE_ORIGIN,
+  SAMPLE_HOTELS,
+} from '@/features/hotels/data/sample-hotels';
+
+const routingProvider = new ApiRoutingProvider();
 
 const MapCanvas = dynamic(
-  () => import("@/features/map/components/MapCanvas").then((module) => module.MapCanvas),
+  () =>
+    import('@/features/map/components/MapCanvas').then(
+      (module) => module.MapCanvas,
+    ),
   {
     ssr: false,
     loading: () => (
@@ -36,6 +43,7 @@ export function MakkahWalkApp() {
   const destination = useLocationStore((state) => state.destination);
   const setOrigin = useLocationStore((state) => state.setOrigin);
   const setDestination = useLocationStore((state) => state.setDestination);
+  const setLocations = useLocationStore((state) => state.setLocations);
   const swapLocations = useLocationStore((state) => state.swapLocations);
   const clearLocations = useLocationStore((state) => state.clearLocations);
   const route = useDirectionsStore((state) => state.route);
@@ -49,9 +57,20 @@ export function MakkahWalkApp() {
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const requestId = useRef(0);
+  const selectedHotelId =
+    origin?.id === HOTEL_ROUTE_ORIGIN.id
+      ? (SAMPLE_HOTELS.find((hotel) => hotel.id === destination?.id)?.id ??
+        null)
+      : null;
+
+  function handleSelectHotel(hotel: Hotel) {
+    setLocations(HOTEL_ROUTE_ORIGIN, hotel);
+    setGpsError(null);
+  }
 
   useEffect(() => {
     const currentRequestId = ++requestId.current;
+    const controller = new AbortController();
     if (!origin || !destination) {
       clearRoute();
       return;
@@ -62,19 +81,29 @@ export function MakkahWalkApp() {
       routingProvider,
       origin.coordinates,
       destination.coordinates,
+      controller.signal,
     )
       .then((walkingRoute) => {
         if (requestId.current === currentRequestId) setRoute(walkingRoute);
       })
       .catch((error: unknown) => {
-        if (requestId.current !== currentRequestId) return;
+        if (requestId.current !== currentRequestId || controller.signal.aborted)
+          return;
         setRouteError(
           error instanceof Error
             ? error.message
-            : "The demonstration route could not be calculated.",
+            : 'The walking route could not be calculated.',
         );
       });
-  }, [origin, destination, clearRoute, setRoute, setRouteError, setRouteLoading]);
+    return () => controller.abort();
+  }, [
+    origin,
+    destination,
+    clearRoute,
+    setRoute,
+    setRouteError,
+    setRouteLoading,
+  ]);
 
   async function handleUseMyLocation() {
     setGpsError(null);
@@ -83,25 +112,25 @@ export function MakkahWalkApp() {
       const coordinates = await getDeviceCoordinates();
       if (!isInsideBoundary(coordinates)) {
         setGpsError(
-          "Your current position is outside the approximate Makkah area supported by this demo.",
+          'Your current position is outside the approximate Makkah area supported by this demo.',
         );
         return;
       }
 
       const currentLocation: Location = {
-        id: "current-location",
-        name: "Your location",
-        category: "current-location",
-        address: "Current device position",
+        id: 'current-location',
+        name: 'Your location',
+        category: 'current-location',
+        address: 'Current device position',
         coordinates,
-        source: "device",
+        source: 'device',
       };
       setOrigin(currentLocation);
     } catch (error) {
       setGpsError(
         error instanceof Error
           ? error.message
-          : "Your current location is unavailable.",
+          : 'Your current location is unavailable.',
       );
     } finally {
       setIsLocating(false);
@@ -113,124 +142,53 @@ export function MakkahWalkApp() {
     setGpsError(null);
   }
 
-  const mapLabel =
-    mapStatus === "ready"
-      ? "Map ready"
-      : mapStatus === "error"
-        ? "Map unavailable"
-        : "Loading map";
-
   return (
     <main className="app-shell">
-      <MapCanvas origin={origin} destination={destination} route={route} />
+      <MapCanvas
+        origin={origin}
+        destination={destination}
+        route={route}
+        hotelRouteOrigin={HOTEL_ROUTE_ORIGIN}
+        showHotelRouteOriginMarker={
+          !origin || origin.id === HOTEL_ROUTE_ORIGIN.id
+        }
+        hotels={SAMPLE_HOTELS}
+        selectedHotelId={selectedHotelId}
+        // onSelectHotel={handleSelectHotel}
+      />
 
-      <header className="app-header">
-        <Link className="brand" href="/" aria-label="Makkah Walk home">
-          <span className="brand-mark">
-            <MapPin size={20} aria-hidden="true" />
-          </span>
-          <span className="brand-name">
-            <strong>Makkah Walk</strong>
-            <small>WALKING MAP</small>
-          </span>
-        </Link>
-        <span className="map-status" aria-live="polite">
-          <span className={`status-indicator ${mapStatus}`} />
-          {mapLabel}
-        </span>
-      </header>
+      <MakkahWalkHeader mapStatus={mapStatus} />
 
-      <section className="search-panel" aria-label="Plan your walk">
-        <div className="panel-heading">
-          <div>
-            <span className="eyebrow">YOUR JOURNEY</span>
-            <h1>Find your way</h1>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="swap-button"
-            aria-label="Swap start and destination"
-            onClick={swapLocations}
-          >
-            <ArrowDownUp size={17} />
-          </Button>
-        </div>
-        <div className="search-fields">
-          <span className="route-connector" aria-hidden="true" />
-          <LocationSearchField
-            inputId="origin-search"
-            label="STARTING POINT"
-            placeholder="Search a place in Makkah"
-            selected={origin}
-            geocodingProvider={geocodingProvider}
-            onSelect={setOrigin}
-          />
-          <LocationSearchField
-            inputId="destination-search"
-            label="DESTINATION"
-            placeholder="Where would you like to go?"
-            selected={destination}
-            geocodingProvider={geocodingProvider}
-            onSelect={setDestination}
-          />
-        </div>
-        <div className="panel-actions">
-          <Button
-            type="button"
-            variant="outline"
-            className="location-button"
-            onClick={handleUseMyLocation}
-            disabled={isLocating}
-          >
-            <LocateFixed size={16} aria-hidden="true" />
-            {isLocating ? "Finding you…" : "Use my location"}
-          </Button>
-          {(origin || destination) && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="reset-button"
-              onClick={handleClear}
-            >
-              <RotateCcw size={14} aria-hidden="true" />
-              Clear
-            </Button>
-          )}
-        </div>
-        {gpsError && (
-          <p className="inline-error" role="alert">
-            {gpsError}
-          </p>
-        )}
-        <div className="sample-note">
-          <span aria-hidden="true">i</span>
-          Sample places and routes are illustrative, not verified directions.
-        </div>
-        <div className="route-summary-desktop">
-          <RouteSummary route={route} status={routeStatus} error={routeError} />
-        </div>
-      </section>
+      <RoutePlanner
+        origin={origin}
+        destination={destination}
+        route={route}
+        routeStatus={routeStatus}
+        routeError={routeError}
+        geocodingProvider={geocodingProvider}
+        isLocating={isLocating}
+        gpsError={gpsError}
+        onSelectOrigin={setOrigin}
+        onSelectDestination={setDestination}
+        onSwap={swapLocations}
+        onUseMyLocation={handleUseMyLocation}
+        onClear={handleClear}
+      />
 
-      <section className="route-sheet" aria-label="Route details">
-        <div className="sheet-handle" aria-hidden="true" />
-        <RouteSummary route={route} status={routeStatus} error={routeError} />
-      </section>
+      <HotelPicker
+        hotels={SAMPLE_HOTELS}
+        selectedHotelId={selectedHotelId}
+        route={route}
+        routeStatus={routeStatus}
+        onSelect={handleSelectHotel}
+      />
 
-      <div className="map-welcome" aria-live="polite">
-        <span className="welcome-icon">
-          <MapPin size={17} aria-hidden="true" />
-        </span>
-        <div>
-          <strong>Explore Makkah</strong>
-          <span>
-            {origin && destination
-              ? "Your demonstration route is ready to preview."
-              : "Choose a start and destination to preview a walk."}
-          </span>
-        </div>
-      </div>
+      <MapWelcome
+        origin={origin}
+        destination={destination}
+        route={route}
+        routeStatus={routeStatus}
+      />
     </main>
   );
 }

@@ -17,6 +17,12 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1 --port 3101",
     url: "http://127.0.0.1:3101",
+    env: {
+      ROUTING_PROVIDER: "mock",
+      OPENROUTESERVICE_API_KEY: "",
+      NEXT_PUBLIC_MAP_STYLE_URL: "",
+      NEXT_PUBLIC_BUILDING_TILE_URL: "",
+    },
     reuseExistingServer: false,
     timeout: 120_000,
   },

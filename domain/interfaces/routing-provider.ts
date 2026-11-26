@@ -5,5 +5,6 @@ export interface RoutingProvider {
   getWalkingRoute(
     origin: Coordinates,
     destination: Coordinates,
+    signal?: AbortSignal,
   ): Promise<WalkingRoute>;
 }

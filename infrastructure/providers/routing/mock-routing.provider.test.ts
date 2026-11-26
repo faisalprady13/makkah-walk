@@ -15,7 +15,7 @@ describe("MockRoutingProvider", () => {
     });
     expect(route.geometry.coordinates).toHaveLength(3);
     expect(route.distanceMeters).toBeGreaterThan(0);
-    expect(route.durationMinutes).toBeGreaterThan(0);
+    expect(route.durationSeconds).toBeGreaterThan(0);
   });
 
   it("rejects invalid and unsupported coordinates", async () => {

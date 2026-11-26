@@ -10,16 +10,18 @@ cp .env.example .env.local
 npm run dev
 ```
 
-No API keys are required. The default basemap uses OpenStreetMap raster tiles and needs an internet connection; follow the tile provider's usage policy and attribution requirements. Search and routing use local sample data. Neither sample places nor demonstration geometry are verified walking directions or evidence of pedestrian access.
+No API keys are required for the default experience. The default basemap uses OpenStreetMap raster tiles and needs an internet connection; follow the tile provider's usage policy and attribution requirements. Search uses local sample data. Mock routes are illustrative only and are not walking directions or evidence of pedestrian access.
 
 ## Optional map configuration
 
 - `NEXT_PUBLIC_MAP_STYLE_URL`: MapLibre style JSON URL. Defaults to OpenStreetMap raster tiles.
 - `NEXT_PUBLIC_BUILDING_TILE_URL`: vector tile URL template for optional building extrusions.
 - `NEXT_PUBLIC_BUILDING_SOURCE_LAYER`: source layer name in the configured building tiles (defaults to `building`).
-- `NEXT_PUBLIC_GEOCODING_PROVIDER` and `NEXT_PUBLIC_ROUTING_PROVIDER`: currently accept `mock` only. Real provider implementations can be added behind the interfaces in `domain/interfaces` and selected through `infrastructure/providers/provider-registry.ts`.
+- `NEXT_PUBLIC_GEOCODING_PROVIDER`: currently `mock`, using the local sample dataset.
+- `ROUTING_PROVIDER`: `mock` by default, or `openrouteservice` to use ORS `foot-walking` directions through the server API.
+- `OPENROUTESERVICE_API_KEY`: private server-only key required when `ROUTING_PROVIDER=openrouteservice`. Put it in `.env.local`; never expose it with a `NEXT_PUBLIC_` prefix. Explicitly selecting ORS without a key reports a configuration error and does not fall back to mock routing.
 
-The map can tilt without vector building data; 2D raster tiles do not provide building geometry. The supported Makkah polygon is approximate and illustrative.
+The map can tilt without vector building data; 2D raster tiles do not provide building geometry. The supported Makkah polygon is approximate and illustrative. ORS routes use its OpenStreetMap pedestrian network, but successful routing does not confirm that a path is accessible, safe, open, or accurately mapped. Review the [Makkah route verification checklist](docs/ORS-MAKKAH-VERIFICATION.md) before making any accuracy claims. The API applies an in-process request limit; multi-instance deployments should replace it with shared rate-limit storage.
 
 ## Checks
 

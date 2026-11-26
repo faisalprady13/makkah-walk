@@ -2,21 +2,28 @@
 
 import { AlertTriangle, Clock3, Footprints, Route as RouteIcon } from "lucide-react";
 import type { WalkingRoute } from "@/domain/entities/walking-route";
+import type { Location } from "@/domain/entities/location";
 import type { DirectionsStatus } from "@/stores/directions.store";
+import {
+  formatDistance,
+  formatDuration,
+} from "@/features/directions/utils/format-route-metrics";
 
 interface RouteSummaryProps {
   route: WalkingRoute | null;
   status: DirectionsStatus;
   error: string | null;
+  origin: Location | null;
+  destination: Location | null;
 }
 
-function formatDistance(meters: number): string {
-  return meters < 1_000
-    ? `${meters} m`
-    : `${(meters / 1_000).toFixed(1)} km`;
-}
-
-export function RouteSummary({ route, status, error }: RouteSummaryProps) {
+export function RouteSummary({
+  route,
+  status,
+  error,
+  origin,
+  destination,
+}: RouteSummaryProps) {
   if (status === "idle") {
     return (
       <div className="route-empty">
@@ -25,7 +32,7 @@ export function RouteSummary({ route, status, error }: RouteSummaryProps) {
         </span>
         <div>
           <strong>Your route will appear here</strong>
-          <p>Choose two places to preview a demonstration route.</p>
+          <p>Choose two places to preview a walking route.</p>
         </div>
       </div>
     );
@@ -35,7 +42,7 @@ export function RouteSummary({ route, status, error }: RouteSummaryProps) {
     return (
       <div className="route-loading" role="status">
         <span className="loading-dot" />
-        Preparing demonstration route…
+        Finding a walking route…
       </div>
     );
   }
@@ -58,8 +65,21 @@ export function RouteSummary({ route, status, error }: RouteSummaryProps) {
           <Footprints size={18} aria-hidden="true" />
         </span>
         <div>
-          <strong>Walking route preview</strong>
-          <span className="demo-badge">DEMO</span>
+          <strong>{route.isDemonstration ? "Walking route preview" : "Walking route"}</strong>
+          <span className={route.isDemonstration ? "demo-badge" : "route-provider-badge"}>
+            {route.isDemonstration ? "DEMO" : "OpenRouteService"}
+          </span>
+          <span className="route-ready-label">READY</span>
+        </div>
+      </div>
+      <div className="route-endpoints">
+        <div>
+          <span>From</span>
+          <strong>{origin?.name ?? "Starting point"}</strong>
+        </div>
+        <div>
+          <span>To</span>
+          <strong>{destination?.name ?? "Destination"}</strong>
         </div>
       </div>
       <div className="route-metrics">
@@ -70,13 +90,15 @@ export function RouteSummary({ route, status, error }: RouteSummaryProps) {
         <div className="metric-divider" />
         <div>
           <strong>
-            <Clock3 size={15} aria-hidden="true" /> {route.durationMinutes} min
+            <Clock3 size={15} aria-hidden="true" /> {formatDuration(route.durationSeconds)}
           </strong>
-          <span>Estimated walk</span>
+          <span>Provider estimate</span>
         </div>
       </div>
       <p className="route-disclaimer">
-        Illustrative route only. Not verified for pedestrian access or current conditions.
+        {route.isDemonstration
+          ? "Illustrative route only. Not verified for pedestrian access or current conditions."
+          : "OpenRouteService pedestrian data is not independently verified for accessibility, safety, or current conditions."}
       </p>
     </div>
   );
